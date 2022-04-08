@@ -31,7 +31,12 @@ plt.title('training')
 fig.show
 
 
-
+# Output:
+#   X - 2n x 2 array of points (there are n points in each class)
+#   T - 2n x 2 target values
+#   x - regular sampled points on the area covered by the points that will
+#       be used for testing the neural network
+#   dim - dimensionality of the area covered by the points
     
     
 #%% Before training, you should make data have zero mean and std of 1
@@ -60,6 +65,7 @@ w_2 = np.random.rand(n_out, n_hlayer+1).T
 
 
 
+
 def neurons(n_in, hlayers:list, m_out):
     
     hlayers = np.array(hlayers)
@@ -70,8 +76,10 @@ def neurons(n_in, hlayers:list, m_out):
     return layers 
 
 
+laye = neurons(2, 3, 2)
+#%% Weights 
 def initialize_W(layers):
-    
+    # Return the transoped weights w.T
     weights = []
     
     for l in range(len(layers)-1):
@@ -79,57 +87,198 @@ def initialize_W(layers):
         n = layers[l] + bias
         scale = np.sqrt(2/n)
         wi = np.random.randn(layers[l+1],n).T * scale
-        print(wi)
         weights.append(wi)
         
     return weights
-        
+      
+
+w3 = initialize_W(laye)
+
+
+#%% SoftMax function 
+
+def softmax(y:np.array):
+    """
+    Softmax function. 
+        y = e^y/Σ(e^y)  for i = 0 to K being K number of classes.
+    Nomralizes the y values onto a range of ∈ [0,1]
+    
+    Parameters
+    ----------
+    y : np.array
+        Array of values, dimensions of (n,K) being n the number of points 
+        and K the number of classes 
+
+    Returns
+    -------
+    Y_norm : np.array
+        Array of values normalized 
+
+    """
+    # Create the exponential on all 2d array 
+    Y_exp = np.exp(y)
+    # Sum on the x direction
+    total = np.sum(Y_exp, axis=1).reshape(-1,1)
+    # Normalize 
+    Y_norm = np.round(Y_exp/total)
+    
+    return Y_norm
+
+
+#%% Forward 
+
+
         
 def forward(X, weights):
     
     N = X.shape[0]
     bias = np.ones((N,1)) 
+    h_activation =[]
+    z_act = []
     
     for i,w in enumerate(weights):
-        print(i)
+        
         if not i:   
-            # Input Layer
-            print('input layer', i)
+            # First hidden layer, with values of X
+            print('First hidden layer', i)
             X_tmp = np.column_stack([bias, X])
+            h_activation.append(X_tmp)
             z = X_tmp@w  # (1,3)
+            z_act.append(z)
             h = np.maximum(0,z) # It works with 2d arrays 
+            # h_activation.append(h)
+
             
         elif i == (len(weights) - 1):
-            # Outpt
-            print('output layer', i)
+            # Outpt layer 
+            # Append a one to the prevous activation layer 
             h = np.column_stack([bias, h])
-            y = h@w
-            # Still have to rearrenge the y inot 0-1 range with softmax func
+            h_activation.append(h)
+            y_hat = h@w
+            # Nomralize 
+            y_hat = softmax(y_hat)
+          
         else:
             # Hidden layers
             print('Hidden layers', i)
             hi = np.column_stack([bias, h])
-            z = hi@w
+            z_act = hi@w
             h = np.maximum(0,z)
-    return y
+            h_activation.append(h)
 
-laye = neurons(2, [3, 4], 2)
-
-
-
-w3 = initialize_W(laye)
-
-
-z1 = np.random.randn(1,5)
+            
+            
+    return y_hat, h_activation, z_act
 
 
 
 
-X1 = X[:2,:]
-N = X1.shape[0]
-bias = np.ones((N,1))
-wi = np.column_stack([bias, X1])
+    
 
 
-y = forward(X, w3)
+y1, h1 = forward(X, w3)
 
+
+
+
+#%% Back Propagation 
+
+
+def backprop(y_pred, y_real, layers, h_act, weights, z_act):
+    deltas = []
+    Q = []
+    # Reverse activation list first element is the last
+    h_act = h_act[::-1]
+    # last layer
+    d = len(layers)-1
+    # print(d)
+    for i in range(d):
+        print(i)
+        # Last layer delta
+        if not i:
+            d_layer = y_pred - y_real
+            # We need the last activation
+            # print(i, d)
+            Q_tmp = h_act[i].T@d_layer
+            deltas.append(d_layer)
+            Q.append(Q_tmp)
+        # other layers
+        
+        else:
+            print('Not the last layer', i)
+            # Derivative of the activation in the hidden layer 
+            # Get the activation from the layer on the right (l+1) but removing 
+            # the bias term
+            h_tmp = h_act[i-1][:,1:] # (l{l+1})
+            # Calculate the derivative of the activation function 
+            a = np.zeros(h_tmp.shape)
+            a[h_tmp!= 0] = 1
+            # Get the delta from the layer on the right 
+            d_next = deltas[i-1]
+            # get the weights from the layer on the right 
+            w_next = weights[i-1][1:,:]
+            # calculate the delta on the layer (partial derivatives respect w)
+            d_layer = a * (w_next.T@d_next.T).T
+            # Store delta on the layer (it's storing in reverse order )
+            deltas.append(d_layer)
+            # Calculate the Q 
+            Q_tmp = h_act[i].T@d_layer
+            Q.append(Q_tmp)
+            
+        # Reverse order of deltas and Q 
+        deltas = deltas[::-1]
+        Q = Q[::-1]
+        
+    return Q, deltas 
+    
+
+q,d = backprop(y1, T, laye, h1, w3)
+
+
+def updateW(lrate, weights, Q):
+    new_w = []
+    for q,w in zip(Q,weights):
+        w_new = w-lrate*q
+        new_w.append(w_new)
+    
+    return new_w
+
+
+
+new_w = updateW(0.001, w3, q)
+
+
+#%%
+
+y2, h2 = forward(X, new_w)
+
+
+
+
+
+
+
+
+
+
+#%% 
+
+laye = neurons(2, 3, 2)
+
+w = initialize_W(laye)
+
+n_iter = 10 
+
+for i in range(n_iter):
+    print('Iter: ', i)
+    
+    y, h = forward(X, w)
+    
+    Q, d = backprop(y, T, laye, h, w)
+
+    w = updateW(0.001, w, Q)
+    print(w[0])
+    
+    
+
+    
