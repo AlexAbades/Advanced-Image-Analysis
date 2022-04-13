@@ -46,6 +46,7 @@ class NeuralNetwork():
         self.n_out = self.y_true.shape[1]
         self.layers = [self.n_in, *self.hidden_units, self.n_out]
         self.weights = []
+        # Without bias 
         self.h_activation = []
         self.z_activation = []
         self.num_layers = len(self.layers)
@@ -403,7 +404,7 @@ class NeuralNetwork():
                 self.back_prop()
                 self.updateW(learn_rate)
     
-    def back_prop(self):
+    def back1(self):
         """
         Back propagation of the ANN.
         Calculates the partial derivatives and and stores the elements to 
@@ -426,11 +427,13 @@ class NeuralNetwork():
 
         """
         b = np.ones((self.N,1))*self.bias
-        for i in range(self.num_layers-1):
-            print('loop: ',i, 'Neurons in layer :', self.layers[self.num_layers - 1 - i])
+        
+        for i in range(1, self.num_layers):
+            print('loop: ',i, 'Neurons in layer :', self.layers[self.num_layers - i])
+            
             # Last layer 
             #[0]
-            if not i:
+            if i == 1:
                 # Partial derivative from Cost function with respect activation 
                 # function: ∂C/∂a:
                     # (N, n_neurons(L))
@@ -439,11 +442,11 @@ class NeuralNetwork():
                 self.deltas.append(d_layer)
                 print('delta ini: ', d_layer)
                 # Get the activation from the previous layer:
-                h_minus1 = self.h_activation[self.num_layers - 2 - i]
+                h_minus1 = self.h_activation[-i]
                 print('h_activation ')
                 print(h_minus1)
                 # Append the bias term (N, n_neurons+1(L-1))
-                h_minus1 = np.column_stack([b, h_minus1])
+                h_minus1 = np.c_[h_minus1, b]
                 # Partal derivative of L with respect weights:
                     # ∂z/∂w 
                     # (n_neurons+1(L-1), n_neurons(L))
@@ -457,29 +460,27 @@ class NeuralNetwork():
             #☺ delta [d(L-2),d(L-1),d(L)]    
             #[1, 2, 3]    
             else:
-                # delta in the layer (l+1)--> (N, n_neurons(l+1))
+                # Delta in the layer (l+1)--> (N, n_neurons(l+1))
                 d_plus1 = self.deltas[0]
-                # weights in the layer (l+1) --> (n_neurons+1(l), n_neurons(l+1))
-                W_plus1 = self.weights[-i]
-                # print('W2 with bias')
-                # print(W_plus1)
-                # Delete the bias term --> (n_neurons(l), n_neurons(l+1))
-                # print('W2 without bias')
-                W_plus1 = W_plus1[1:,:]
-                # print('W as anna')
-                # print(self.weights[-1][:-1])
-                
-                # linear combination WITHOUT actvation function in layer (l)
-                z = self.z_activation[-i]
+                # Weights in the layer (l+1) --> (n_neurons+1(l), n_neurons(l+1))
+                W_plus1 = self.weights[-i+1]
+                # Delete the bias term --> (n_neurons(l+1), n_neurons(l+2))
+                # Last row as we have put the bias in the last column
+                W_plus1 = W_plus1[:-1,:]
+                # Linear combination WITHOUT actvation function in layer (l+1)
+                z_plus = self.z_activation[-i+1]
                 # Derivative of ReLu: (N, n_neurons(l))
-                a_derivative = np.zeros(z.shape)
-                a_derivative[z>0] = 1                
-                # delta in hidden layers --> (N, n_neurons(l))
+                a_derivative = np.zeros(z_plus.shape)
+                a_derivative[z_plus>0] = 1                
+                # Delta in hidden layers --> (N, n_neurons(l))
                 d_layer = a_derivative*(W_plus1@d_plus1.T).T
                 # Insert delta at the begining 
                 self.deltas.insert(0, d_layer)
+                
                 # get the activation on the previuos layer --> (N, n_neurons+1(l-1))
-                h_minus = self.h_activation[-1-i]
+                h_minus = self.h_activation[-i]
+                # Append the bias term
+                h_minus = np.c_[h_minus, b]
                 # Partal derivative of l with respect weights:
                     # ∂z/∂w 
                     # (n_neurons+1(L-1), n_neurons(L))
@@ -504,6 +505,8 @@ ANN = NeuralNetwork(X_c, T, hidden_units)
 ANN.initialize_W()
 ANN.forward1()
 y_for1 = ANN.y_pred
+ANN.back1()
+ANN.updateW(0.001)
 #%% 
 
 
