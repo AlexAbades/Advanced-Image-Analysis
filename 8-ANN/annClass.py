@@ -13,7 +13,6 @@ import make_data as mkd
 
 
 
-
 #%% 
 
 
@@ -371,9 +370,69 @@ X_c = (X - c)/std
 hidden_units = [3]
 ANN = NeuralNetwork(X_c, T, hidden_units)
 ANN.initialize_W()
+W_begin = ANN.weights
+#%% 
+
+
 ANN.forward_prop()
 ANN.back_prop()
 ANN.updateW(0.001)
+ANN.forward_prop()
+ANN.back_prop()
+ANN.updateW(0.001)
+y_class = ANN.y_pred
+W_class = ANN.weights 
+
+#%% 
+ 
+
+#%% 
+
+
+
+def NN_MODEL(x,T,n,itera,hid_units,hid_lay):
+    
+    #initialize weights
+    W = W_begin
+    y2 = []
+    #For each iteration
+    for i in range(itera):
+        z = np.c_[x, np.ones((x.shape[0],1))]@W[0]
+        
+        for l in range(hid_lay):
+            h = np.maximum(z, 0)
+            y_hat = np.c_[h, np.ones((x.shape[0],1))]@W[l+1]
+        
+        print(y_hat)
+        y = np.exp(y_hat)/np.sum(np.exp(y_hat), axis=1, keepdims=True)
+        # y2.append(y)
+        #loss funtion, prediction - target value
+        L2=y-T
+        #partial derivative
+        dL2=np.c_[h, np.ones((x.shape[0],1))].T@L2
+        
+        #for the hidden layer, backpropagation
+        a=np.zeros(z.shape)
+        a[z>0]=1
+        L=W[1][:-1]@L2.T
+        L1=a*L.T
+        dL1=np.c_[x, np.ones((x.shape[0],1))].T@L1
+    
+        #Update weights:
+        W[0]=W[0]-n*dL1
+        W[1]=W[1]-n*dL2
+        
+    return W,y
+
+#%% 
+
+itera = 500 #iterations
+n=0.001 #learning rate
+hid_units= 3 #hidden units (flexible structure)
+hid_lay= 1 #hidden layers (flexible strucutre)
+
+w_ana, y_ana = NN_MODEL(X_c,T,n,itera,hid_units,1)
+
 
 
 #%% 
@@ -382,3 +441,4 @@ ANN = NeuralNetwork(X_c, T, hidden_units)
 n_iterations = 500 
 learn_rate = 0.001
 ANN.trainANN(n_iterations, learn_rate)
+y_train = ANN.y_pred
