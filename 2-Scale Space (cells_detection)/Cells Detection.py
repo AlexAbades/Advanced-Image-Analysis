@@ -15,7 +15,7 @@ from itertools import groupby
 from operator import itemgetter
 import argparse
 
-#%% 
+#%% Read & Plot
 # read the image 
 im = skimage.io.imread('test_blob_uniform.png').astype(np.float)
 # Create a figure to display it 
@@ -23,6 +23,7 @@ fig,ax = plt.subplots(1)
 # Show the image 
 ax.imshow(im, cmap = 'gray')  # We can change the colo map  
 
+#%% 
 
 # Create a gaussian kernel in a function 
 
@@ -45,6 +46,9 @@ def gauss(sigma, o=0):
     """
     s_f = np.ceil(5*np.sqrt(sigma))
     x = np.arange(-s_f, s_f + 1)
+    # x = np.linspace(start =-s_f, stop= s_f, num=18)
+    print(x)
+    # print(x1)
     s = np.sqrt(sigma)
     e = np.exp((-x**2)/(2*s**2))
     if o == 0:
@@ -59,27 +63,27 @@ def gauss(sigma, o=0):
         print('Please choose between 0, 1, 2 deriatives')
     return np.expand_dims(g,axis=1)
     
-t = 3 
+t = 3
 # Apply gaussian to the vector x, or which is the same create a gaussian kernel 
 g = gauss(t)
 g1 = gauss(t, 1)
 g2 = gauss(t, 2) 
-g3 = gauss(t, 3) 
+g3 = gauss(t, 3)
 # Create a plot for the gaussian 
 fig, ax = plt.subplots(1,1,figsize=(10,10),sharex=True,sharey=True) 
 ax.plot(g, label='Gaussian')
 ax.plot(g1, label='Gaussian 1st derivative')
 ax.plot(g2, label='Gaussian 2nd Derivative')
-ax.plot(g3, label='Gaussian 2nd Derivative')
+ax.plot(g3, label='Gaussian 3th Derivative')
 ax.legend()
 
 #%% Convolve the image in the x direction with normal Gaussian 
 
-t = 325 
+t = 10
 g = gauss(t)
 
 # Convolve the image in the x direction with normal Gaussian 
-im_f = cv2.filter2D(im,-1,g)
+im_f = cv2.filter2D(im,-1,g.T)
 fig, ax = plt.subplots(1,1,figsize=(10,10),sharex=True,sharey=True)
 ax.imshow(im_f, cmap = 'gray')
 plt.title('Kernel applied on the X direction', fontsize=30)      
@@ -104,7 +108,7 @@ plt.title('Kernel applied on the X and Y direction', fontsize=30)
 # pixel's intensity will larger on the center of the figures.
 
 im = skimage.io.imread('test_blob_uniform.png').astype(np.float)
-t = 325
+t = 20
 
 def laplacian(I, sigma, smooth=None):
     if smooth:  # Apply smoothness 

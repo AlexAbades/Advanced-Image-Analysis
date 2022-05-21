@@ -211,7 +211,7 @@ I2= threshold(lp, T1, T2)
 #%% Markov ranodm Fields: Likelihood 
 
 
-def likelihood(D,S,*mus):
+def likelihood(D, S, *mus):
     """
     Using Markov Random fields we calclate the likelihood as one clique
     potentials. 
