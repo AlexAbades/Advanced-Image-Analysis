@@ -442,3 +442,23 @@ n_iterations = 500
 learn_rate = 0.001
 ANN.trainANN(n_iterations, learn_rate)
 y_train = ANN.y_pred
+
+
+#%% 
+
+
+
+W1 = np.array([[0.2, -1.3], [-0.3, 1.8], [-1.7, 1.6]])
+W2 = np.array([[-1.4, 1.5, -0.5, 0.9], [0.2, 1.2, -0.9, 1.7]]) 
+
+X = np.array([[1, 2.5]])
+
+
+h = X@W1.T
+a = np.maximum(h, 0)
+a = np.append(a,1)
+a = a[:None].T
+y = a@W2.T
+y_a = np.exp(y)
+y_a[0]/y_a.sum()
+
